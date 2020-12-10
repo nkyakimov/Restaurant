@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name" translatable="false">Restaurant App</string>
+    <string name="greeting">Welcome</string>
+    <string name="ip_request">Enter IP Address of server</string>
+    <string name="type_choose">Choose type of device function</string>
+    <string name="tables">Tables</string>
+    <string name="server_down">Server is Down</string>
+    <string name="retry">Retry</string>
+    <string name="new_table">Add new Table</string>
+    <string name="number">Number</string>
+    <string name="change_ip">Change IP</string>
+    <string name="cancel">Cancel</string>
+    <string name="addProductHint">Product Name or ID</string>
+    <string name="add">Add</string>
+    <string name="table">Table</string>
+    <string name="product_choose">Choose Product to Add</string>
+    <string name="chosen_product">To Order</string>
+    <string name="addComment">Add Comment</string>
+    <string name="new_comment">New Comment</string>
+    <string name="userFile" translatable="false">userFile.sg</string>
+    <string name="ipFile" translatable="false">ipFile.sg</string>
+    <string name="programType" translatable="false">programType.sg</string>
+    <string name="wrongIPFormat">"Wrong Format for IP "</string>
+    <string name="user_error">Try again</string>
+    <string name="new_user" translatable="false">Login User</string>
+    <string name="login">Login</string>
+    <string name="error_creating_table">Table number already exists</string>
+    <string name="error" translatable="false">Warning</string>
+    <string name="leave_without_order">If you leave products will not be saved</string>
+    <string name="port">8190</string>
+    <string name="logout">Logout</string>
+    <string name="type_change">Change Type of Device</string>
+    <string name="change_password">Change Password</string>
+    <string name="new_password">New Password</string>
+    <string name="old_password">Old Password</string>
+    <string name="password_not_changed">Password NOT Changed!</string>
+    <string name="current_orders">Current Orders</string>
+    <string name="unsentOrders" translatable="false">unsentOrders.sg</string>
+    <string name="rung_orders">Rung Orders</string>
+    <string name="new_orders">New Orders</string>
+    <string name="comment_info">Each line is for each product</string>
+    <string name="ordersFile" translatable="false">ordersBackedUP.sg</string>
+</resources>

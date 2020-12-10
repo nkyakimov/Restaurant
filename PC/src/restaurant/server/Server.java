@@ -170,7 +170,6 @@ public class Server {
                         var ois = new ObjectInputStream(socket.getInputStream());
                         String username = ois.readUTF();
                         String password = ois.readUTF();
-                        System.out.println(username + "," + password);
                         int res;
                         if ((res = AccountDataBase.verify(username, password)) >= 0) {
                             oos.writeInt(res);

@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -57,6 +59,13 @@ public class Table implements Serializable {
 
     public void bill(String restaurantName, String filepath) {
         DecimalFormat df = new DecimalFormat("#.##");
+        if(Files.notExists(Paths.get(filepath))) {
+            try {
+                Files.createDirectory(Paths.get(filepath));
+            }catch (IOException e) {
+                throw new RuntimeException("Cannot create bill directory");
+            }
+        }
         String billPath = filepath + File.separator
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy  HH_mm"));
         int i = 1;

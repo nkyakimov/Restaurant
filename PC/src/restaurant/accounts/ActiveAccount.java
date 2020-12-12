@@ -24,7 +24,7 @@ public class ActiveAccount implements Serializable {
         return tables.get(id);
     }
 
-    public synchronized void removeTable(int id) {
+    public void removeTable(int id) {
         tables.remove(id);
     }
 
@@ -48,7 +48,7 @@ public class ActiveAccount implements Serializable {
         return tables;
     }
 
-    public synchronized void addTable(Table table) {
+    public void addTable(Table table) {
         tables.put(table.getId(), table);
     }
 }

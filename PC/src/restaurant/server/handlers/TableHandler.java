@@ -12,13 +12,12 @@ import java.util.Map;
 
 public class TableHandler implements Runnable {
     private final Intercom intercom;
-    private Map<Integer, Table> tables;
     private final String username;
     private final Socket socket;
     private final boolean admin;
     private final ObjectOutputStream oos;
     private final ObjectInputStream ois;
-
+    private Map<Integer, Table> tables;
     private boolean running = true;
 
     public TableHandler(
@@ -56,7 +55,7 @@ public class TableHandler implements Runnable {
                         case DeleteFromTable -> deleteTable(response.substring(7));
                         case RequestSomething -> executeRequest(response.substring(8).trim());
                         case ChangePassword -> changePassword(response.substring(7));
-                        case Test ->test();
+                        case Test -> test();
                         case Quit -> throw new IOException("Ending");
                     }
                 } catch (ArrayIndexOutOfBoundsException ignored) {
@@ -68,7 +67,7 @@ public class TableHandler implements Runnable {
         }
     }
 
-    private void test() throws IOException{
+    private void test() throws IOException {
         oos.writeUTF("TEST");
         oos.flush();
     }
@@ -124,13 +123,13 @@ public class TableHandler implements Runnable {
         try {
             if (!admin) {
                 oos.writeBoolean(false);
-                return;
-            }
-            try {
-                intercom.removeTable(Integer.parseInt(substring.trim()));
-                oos.writeBoolean(true);
-            } catch (NumberFormatException ignored) {
-                oos.writeBoolean(false);
+            } else {
+                try {
+                    intercom.removeTable(Integer.parseInt(substring.trim()));
+                    oos.writeBoolean(true);
+                } catch (NumberFormatException ignored) {
+                    oos.writeBoolean(false);
+                }
             }
         } finally {
             oos.flush();
@@ -143,8 +142,7 @@ public class TableHandler implements Runnable {
             if (tables.get(Integer.parseInt(data[0])) != null) {
                 try {
                     oos.writeBoolean(
-                            intercom.order(
-                                    username, Integer.parseInt(data[0]), Integer.parseInt(data[1]), data[2]));
+                            intercom.order(username, Integer.parseInt(data[0]), Integer.parseInt(data[1]), data[2]));
                 } catch (ArrayIndexOutOfBoundsException e) {
                     oos.writeBoolean(
                             intercom.order(username, Integer.parseInt(data[0]), Integer.parseInt(data[1]), ""));

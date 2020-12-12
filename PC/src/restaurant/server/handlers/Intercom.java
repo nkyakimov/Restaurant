@@ -1,6 +1,7 @@
 package restaurant.server.handlers;
 
 import restaurant.accounts.ActiveAccount;
+import restaurant.server.handlers.orders.UnsentOrder;
 import restaurant.storage.Product;
 import restaurant.storage.ProductDataBase;
 import restaurant.table.Table;
@@ -32,7 +33,7 @@ public class Intercom {
     private final ReadWriteLock unsentOrdersLock = new ReentrantReadWriteLock();
     private Map<Integer, Table> allTables;
     private List<String> unsentMessages;
-    private List<String[]> unsentOrders;
+    private List<UnsentOrder> unsentOrders;
 
     public Intercom(ProductDataBase pdb, String restaurantName, String billPath, String backup) {
         tableHandlers = new ConcurrentHashMap<>();
@@ -69,6 +70,7 @@ public class Intercom {
                 unsentOrdersLock.readLock().unlock();
             }
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException("Cannot perform backup of Server");
         }
     }
@@ -82,11 +84,6 @@ public class Intercom {
             }
             allTables = new ConcurrentHashMap<>(20);
             tableHandlers.keySet().forEach(account -> allTables.putAll(account.getTables()));
-            /*
-            for (ActiveAccount i : tableHandlers.keySet()) {
-                allTables.putAll(i.getTables());
-            }
-             */
             unsentMessages = (ArrayList) ois.readObject();
             unsentOrders = (ArrayList) ois.readObject();
         } catch (Exception e) {
@@ -105,12 +102,11 @@ public class Intercom {
 
     protected boolean order(String username, int table, int productId, String comment) {
         if (addToTable(table, productId)) {
-            boolean found = tryToOrder(username, table, productId, comment);
+            boolean found = tryToOrder(new UnsentOrder(username, table, productId, comment));
             if (!found) {
                 try {
                     unsentOrdersLock.writeLock().lock();
-                    unsentOrders.add(
-                            new String[]{username, String.valueOf(table), String.valueOf(productId), comment});
+                    unsentOrders.add(new UnsentOrder(username, table, productId, comment));
                 } finally {
                     unsentOrdersLock.writeLock().unlock();
                 }
@@ -158,14 +154,16 @@ public class Intercom {
     }
 
 
-    protected synchronized void addTableHandler(TableHandler tableHandler) {
+    protected void addTableHandler(TableHandler tableHandler) {
         List<TableHandler> temp;
         if ((temp = tableHandlers.get(new ActiveAccount(tableHandler.getUsername()))) == null) {
             temp = new ArrayList<>();
             temp.add(tableHandler);
             tableHandlers.put(new ActiveAccount(tableHandler.getUsername()), temp);
         } else {
-            temp.add(tableHandler);
+            synchronized (temp) {
+                temp.add(tableHandler);
+            }
         }
         update();
     }
@@ -254,9 +252,10 @@ public class Intercom {
             return;
         }
         List<TableHandler> temp;
-        if ((temp = tableHandlers.get(new ActiveAccount(tableHandler.getUsername().trim())))
-                != null) {
-            temp.remove(tableHandler);
+        if ((temp = tableHandlers.get(new ActiveAccount(tableHandler.getUsername().trim()))) != null) {
+            synchronized (temp) {
+                temp.remove(tableHandler);
+            }
         }
         update();
     }
@@ -309,7 +308,7 @@ public class Intercom {
     }
 
 
-    protected synchronized void removeTable(int id) {
+    protected void removeTable(int id) {
         allTables.remove(id);
         for (ActiveAccount account : tableHandlers.keySet()) {
             account.removeTable(id);
@@ -338,12 +337,7 @@ public class Intercom {
     private void tryToResendOrder() {
         try {
             unsentOrdersLock.writeLock().lock();
-            unsentOrders.removeIf(order ->
-                    tryToOrder(
-                            order[0],
-                            Integer.parseInt(order[1]),
-                            Integer.parseInt(order[2]),
-                            order[3]));
+            unsentOrders.removeIf(this::tryToOrder);
         } finally {
             unsentOrdersLock.writeLock().unlock();
         }
@@ -351,14 +345,15 @@ public class Intercom {
     }
 
 
-    private boolean tryToOrder(String username, int table, int productId, String comment) {
+    private boolean tryToOrder(UnsentOrder unsentOrder) {
         try {
             deviceHandlerLock.readLock().lock();
             boolean found = false;
-            String type = pdb.getProduct(productId).getType();
+            Product product;
+            String type = (product = pdb.getProduct(unsentOrder.productID())).getType();
             for (DeviceHandler deviceHandler : deviceHandlers) {
                 if (deviceHandler.matches(type)) {
-                    deviceHandler.message(username, table, pdb.getProduct(productId), comment);
+                    deviceHandler.message(unsentOrder.username(), unsentOrder.tableID(), product, unsentOrder.comment());
                     found = true;
                 }
             }
@@ -373,7 +368,9 @@ public class Intercom {
         if ((list = notificationHandlers.get(temp.getUsername())) == null) {
             notificationHandlers.put(temp.getUsername(), new ArrayList<>(java.util.Collections.singleton(temp)));
         } else {
-            list.add(temp);
+            synchronized (list) {
+                list.add(temp);
+            }
         }
         update();
         tryToResendMess();
@@ -382,11 +379,18 @@ public class Intercom {
     protected void removeNotificationHandler(NotificationHandler notificationHandler) {
         try {
             List<NotificationHandler> list;
-            (list = notificationHandlers.get(notificationHandler.getUsername())).remove(notificationHandler);
-            if (list.size() == 0) {
-                notificationHandlers.remove(notificationHandler.getUsername());
+            if ((list = notificationHandlers.get(notificationHandler.getUsername())) != null) {
+                synchronized (list) {
+                    list.remove(notificationHandler);
+                }
+            } else {
+                return;
             }
-        } catch (Exception ignored) {
+            synchronized (list) {
+                if (list.size() == 0) {
+                    notificationHandlers.remove(notificationHandler.getUsername());
+                }
+            }
         } finally {
             update();
         }
